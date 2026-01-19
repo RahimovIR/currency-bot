@@ -89,6 +89,7 @@ jobs:
           podman run -d \
             --name currency-bot \
             --restart unless-stopped \
+            --network=host \
             -e TELOXIDE_TOKEN="${{ secrets.TELOXIDE_TOKEN }}" \
             ${{ steps.image.outputs.tag }}
 
