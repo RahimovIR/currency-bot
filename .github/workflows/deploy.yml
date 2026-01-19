@@ -83,7 +83,7 @@ jobs:
 
           # Stop old container
           podman stop currency-bot || true
-          podman rm currency-bot || true
+          podman rm -f currency-bot || true
 
           # Run new container
           podman run -d \
