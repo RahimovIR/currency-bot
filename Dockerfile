@@ -27,4 +27,5 @@ COPY --from=builder /app/target/release/currency-bot /app/currency-bot
 
 ENV RUST_LOG="info"
 
-ENTRYPOINT ["/app/currency-bot"]
+SHELL ["/bin/sh", "-c"]
+CMD ["/app/currency-bot"]
