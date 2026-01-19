@@ -1,0 +1,6 @@
+# Git attributes for proper line endings
+* text=auto
+
+# Shell scripts should always use LF
+githooks/* text eol=lf
+.github/workflows/* text eol=lf

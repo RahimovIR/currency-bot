@@ -46,6 +46,12 @@ git tag v1.0.0 && git push --tags    # Create and push release tag
 - CI runs on push/PR: fmt check, clippy, tests, build on Linux & Windows
 - Release workflow: builds binaries for Linux/Windows when tag `v*` is pushed
 
+### Git Hooks
+Pre-commit hook automatically runs `cargo fmt` before each commit:
+- Code is formatted automatically before commit
+- Set up automatically: `git config core.hooksPath githooks`
+- For manual setup: `git config core.hooksPath githooks`
+
 ## Code Style Guidelines
 
 ### Formatting

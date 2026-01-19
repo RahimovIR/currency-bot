@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Pre-commit hook: Format Rust code with cargo fmt
+
+echo "Running cargo fmt..."
+
+# Format all Rust code
+cargo fmt
+
+# Add formatted files to staging area
+git add -u
+
+echo "Code formatted successfully"
