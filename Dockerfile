@@ -2,7 +2,7 @@ FROM rust:1.83-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache musl-dev
+RUN apk add --no-cache musl-dev pkgconfig openssl-dev
 
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
