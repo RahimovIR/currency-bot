@@ -39,6 +39,13 @@ cargo doc                # Generate documentation
 cargo doc --open         # Generate and open documentation
 ```
 
+### CI/CD
+```bash
+git tag v1.0.0 && git push --tags    # Create and push release tag
+```
+- CI runs on push/PR: fmt check, clippy, tests, build on Linux & Windows
+- Release workflow: builds binaries for Linux/Windows when tag `v*` is pushed
+
 ## Code Style Guidelines
 
 ### Formatting
