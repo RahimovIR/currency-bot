@@ -72,7 +72,7 @@ jobs:
 
     - name: Deploy to server
       run: |
-        ssh -i ~/.ssh/id_ed25519 ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << 'ENDSSH'
+        ssh -i ~/.ssh/id_ed25519 ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << ENDSSH
           set -e
 
           # Login to GHCR
@@ -89,7 +89,7 @@ jobs:
           docker run -d \
             --name currency-bot \
             --restart unless-stopped \
-            -e TELOXIDE_TOKEN="$TELOXIDE_TOKEN" \
+            -e TELOXIDE_TOKEN="${{ secrets.TELOXIDE_TOKEN }}" \
             ${{ steps.image.outputs.tag }}
 
           echo "Deployment completed successfully"
