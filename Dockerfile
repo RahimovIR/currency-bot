@@ -21,7 +21,6 @@ WORKDIR /app
 
 COPY --from=builder /app/target/release/currency-bot /app/currency-bot
 
-ENV TELOXIDE_TOKEN=""
 ENV RUST_LOG="info"
 
 CMD ["/app/currency-bot"]

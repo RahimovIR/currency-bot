@@ -4,6 +4,5 @@ target/
 .gitignore
 .github/
 AGENTS.md
-Cargo.lock
 Dockerfile
 *.md
