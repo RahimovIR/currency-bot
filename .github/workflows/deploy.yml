@@ -90,6 +90,8 @@ jobs:
             --name currency-bot \
             --restart unless-stopped \
             --network=host \
+            --security-opt label=disable \
+            --userns=keep-id \
             -e TELOXIDE_TOKEN="$TELOXIDE_TOKEN" \
             ${{ steps.image.outputs.tag }}
 
