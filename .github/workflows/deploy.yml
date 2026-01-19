@@ -8,6 +8,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  SERVER_HOST: 192.3.24.166
+  SERVER_USER: ubuntu
 
 jobs:
   build-and-deploy:
@@ -59,18 +61,18 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
-        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+        ssh-keyscan ${{ env.SERVER_HOST }} >> ~/.ssh/known_hosts
         cat >> ~/.ssh/config << EOF
           Host target
-            HostName ${{ secrets.SERVER_HOST }}
-            User ${{ secrets.SERVER_USER }}
+            HostName ${{ env.SERVER_HOST }}
+            User ${{ env.SERVER_USER }}
             IdentityFile ~/.ssh/id_ed25519
             StrictHostKeyChecking no
         EOF
 
     - name: Deploy to server
       run: |
-        ssh -i ~/.ssh/id_ed25519 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'ENDSSH'
+        ssh -i ~/.ssh/id_ed25519 ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << 'ENDSSH'
           set -e
 
           # Login to GHCR
