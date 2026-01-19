@@ -1,0 +1,9 @@
+target/
+.env
+.git/
+.gitignore
+.github/
+AGENTS.md
+Cargo.lock
+Dockerfile
+*.md
