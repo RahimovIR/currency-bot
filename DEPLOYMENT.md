@@ -1,25 +1,20 @@
 # Deployment Guide
 
-This guide explains how to deploy the Currency Bot to an Ubuntu server using Podman and GitHub Actions.
+This guide explains how to deploy the Currency Bot to an Ubuntu server using Docker and GitHub Actions.
 
 ## Prerequisites
 
 ### Server Setup
 
-1. Install Podman on Ubuntu:
+1. Install Docker on Ubuntu:
 ```bash
 sudo apt update
-sudo apt install -y podman
+sudo apt install -y docker.io docker-compose
 ```
 
 2. Verify installation:
 ```bash
-podman --version
-```
-
-3. Create systemd service directory:
-```bash
-sudo mkdir -p /etc/systemd/system/
+docker --version
 ```
 
 ### GitHub Repository Settings
@@ -94,49 +89,62 @@ docker push ghcr.io/YOUR_USERNAME/currency-bot:latest
 3. Deploy to server:
 ```bash
 ssh vpn
-podman pull ghcr.io/YOUR_USERNAME/currency-bot:latest
-podman run -d --name currency-bot --restart unless-stopped -e TELOXIDE_TOKEN="your-token" ghcr.io/YOUR_USERNAME/currency-bot:latest
+docker pull ghcr.io/YOUR_USERNAME/currency-bot:latest
+docker run -d --name currency-bot --restart unless-stopped -e TELOXIDE_TOKEN="your-token" ghcr.io/YOUR_USERNAME/currency-bot:latest
 ```
 
 ## Server Management
 
 ### Check Container Status
 ```bash
-ssh vpn "podman ps -a | grep currency-bot"
+ssh vpn "docker ps -a | grep currency-bot"
 ```
 
 ### View Logs
 ```bash
-ssh vpn "podman logs -f currency-bot"
+ssh vpn "docker logs -f currency-bot"
 ```
 
 ### Restart Container
 ```bash
-ssh vpn "podman restart currency-bot"
+ssh vpn "docker restart currency-bot"
 ```
 
 ### Stop Container
 ```bash
-ssh vpn "podman stop currency-bot"
+ssh vpn "docker stop currency-bot"
 ```
 
 ### Update Container
 ```bash
-ssh vpn "podman pull ghcr.io/YOUR_USERNAME/currency-bot:latest && podman stop currency-bot && podman rm currency-bot && podman run -d --name currency-bot --restart unless-stopped -e TELOXIDE_TOKEN='your-token' ghcr.io/YOUR_USERNAME/currency-bot:latest"
+ssh vpn "docker pull ghcr.io/YOUR_USERNAME/currency-bot:latest && docker stop currency-bot && docker rm currency-bot && docker run -d --name currency-bot --restart unless-stopped -e TELOXIDE_TOKEN='your-token' ghcr.io/YOUR_USERNAME/currency-bot:latest"
 ```
 
 ## Systemd Service (Optional)
 
 To manage container with systemd:
 
-1. Copy `currency-bot.service` to server:
+1. Create service file on server:
 ```bash
-scp currency-bot.service vpn:/tmp/
+ssh vpn "sudo tee /etc/systemd/system/currency-bot.service << EOF
+[Unit]
+Description=Currency Bot
+After=docker.service
+Requires=docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker start currency-bot
+ExecStop=/usr/bin/docker stop -t 10 currency-bot
+
+[Install]
+WantedBy=multi-user.target
+EOF"
 ```
 
-2. Install service on server:
+2. Enable and start service:
 ```bash
-ssh vpn "sudo mv /tmp/currency-bot.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now currency-bot"
+ssh vpn "sudo systemctl daemon-reload && sudo systemctl enable --now currency-bot"
 ```
 
 3. Check service status:
@@ -148,7 +156,7 @@ ssh vpn "sudo systemctl status currency-bot"
 
 ### Container won't start
 ```bash
-ssh vpn "podman logs currency-bot"
+ssh vpn "docker logs currency-bot"
 ```
 
 ### SSH connection fails
@@ -156,11 +164,11 @@ ssh vpn "podman logs currency-bot"
 - Check server firewall allows SSH (port 22)
 - Verify `SERVER_HOST` and `SERVER_USER` secrets
 
-### Podman login fails
+### Docker login fails
 - Verify `GHCR_TOKEN` has correct scopes
 - Ensure GitHub repository visibility allows GHCR access
 
 ### Bot not responding
 - Check `TELOXIDE_TOKEN` is correct
-- Verify container is running: `ssh vpn "podman ps"`
-- View logs: `ssh vpn "podman logs -f currency-bot"`
+- Verify container is running: `ssh vpn "docker ps"`
+- View logs: `ssh vpn "docker logs -f currency-bot"`
