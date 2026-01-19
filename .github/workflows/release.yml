@@ -11,70 +11,49 @@ env:
 jobs:
   build-and-release:
     name: Build and Release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        include:
-          - os: ubuntu-latest
-            artifact_name: currency-bot
-            asset_name: currency-bot-linux-amd64
-          - os: windows-latest
-            artifact_name: currency-bot.exe
-            asset_name: currency-bot-windows-amd64.exe
-            
+    runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Cache cargo registry
       uses: actions/cache@v4
       with:
         path: ~/.cargo/registry
         key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-        
+
     - name: Cache cargo index
       uses: actions/cache@v4
       with:
         path: ~/.cargo/git
         key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-        
+
     - name: Cache cargo build
       uses: actions/cache@v4
       with:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-        
+
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: stable
         override: true
-        
+
     - name: Build release
       run: cargo build --release --verbose
-      
-    - name: Strip binary (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: strip target/release/${{ matrix.artifact_name }}
-      
-    - name: Compress binary (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: gzip -c target/release/${{ matrix.artifact_name }} > ${{ matrix.asset_name }}.gz
-      
-    - name: Upload release asset (Linux)
-      if: matrix.os == 'ubuntu-latest'
+
+    - name: Strip binary
+      run: strip target/release/currency-bot
+
+    - name: Compress binary
+      run: gzip -c target/release/currency-bot > currency-bot-linux-amd64.gz
+
+    - name: Upload release asset
       uses: softprops/action-gh-release@v1
       with:
-        files: ${{ matrix.asset_name }}.gz
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Upload release asset (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: softprops/action-gh-release@v1
-      with:
-        files: target/release/${{ matrix.artifact_name }}
+        files: currency-bot-linux-amd64.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

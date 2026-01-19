@@ -43,8 +43,8 @@ cargo doc --open         # Generate and open documentation
 ```bash
 git tag v1.0.0 && git push --tags    # Create and push release tag
 ```
-- CI runs on push/PR: fmt check, clippy, tests, build on Linux & Windows
-- Release workflow: builds binaries for Linux/Windows when tag `v*` is pushed
+- CI runs on push/PR: fmt check, clippy, tests, build on Linux (ubuntu-latest)
+- Release workflow: builds binary for Linux when tag `v*` is pushed
 
 ### Git Hooks
 Pre-commit hook automatically runs `cargo fmt` before each commit:
