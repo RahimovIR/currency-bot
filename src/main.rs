@@ -1,5 +1,5 @@
-use teloxide::prelude::*;
 use dotenvy::dotenv;
+use teloxide::prelude::*;
 
 #[tokio::main]
 async fn main() {
@@ -21,4 +21,3 @@ async fn main() {
     })
     .await;
 }
-
