@@ -90,7 +90,7 @@ jobs:
             --name currency-bot \
             --restart unless-stopped \
             --network=host \
-            -e TELOXIDE_TOKEN="${{ secrets.TELOXIDE_TOKEN }}" \
+            -e TELOXIDE_TOKEN="$TELOXIDE_TOKEN" \
             ${{ steps.image.outputs.tag }}
 
           echo "Deployment completed successfully"
