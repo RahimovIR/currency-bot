@@ -32,6 +32,10 @@ cargo clippy --fix       # Auto-fix Clippy warnings
 cargo fmt                # Format code
 cargo fmt --check        # Check formatting without modifying
 ```
+- **Always fix all Clippy warnings** before committing
+- CI will fail if warnings are present
+- Use `cargo clippy --fix` for automatic fixes, then review changes
+- Do not use `#[allow(...)]` to silence warnings unless absolutely necessary
 
 ### Documentation
 ```bash
@@ -57,6 +61,21 @@ Pre-commit hook automatically runs `cargo fmt` before each commit:
 - Code is formatted automatically before commit
 - Set up automatically: `git config core.hooksPath githooks`
 - For manual setup: `git config core.hooksPath githooks`
+
+### Git Workflow
+Follow these branch naming conventions:
+- **Features**: `feature/<name>` - for new functionality
+  - Example: `feature/start-module`, `feature/currency-api`
+- **Bugfixes**: `bugfix/<name>` - for fixing bugs
+  - Example: `bugfix/memory-leak`, `botfix/parsing-error`
+
+Branch workflow:
+1. Create feature/bugfix branch from `master`
+2. Make changes and commit regularly
+3. Run tests and ensure they pass
+4. Create Pull Request to `master`
+5. Wait for CI to pass
+6. Merge after code review
 
 ## Code Style Guidelines
 

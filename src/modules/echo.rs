@@ -18,19 +18,12 @@ impl Module for EchoModule {
     }
 
     fn commands(&self) -> Vec<&str> {
-        vec!["/echo", "/start"]
+        vec!["/echo"]
     }
 
     async fn handle(&self, bot: Bot, msg: Message) -> Result<(), Box<dyn Error + Send + Sync>> {
         if let Some(text) = msg.text() {
-            if text.starts_with("/start") {
-                bot.send_message(
-                    msg.chat.id,
-                    "Добро пожаловать в Currency Bot!\n\
-                     Используйте /echo <текст> для эхо-ответа.",
-                )
-                .await?;
-            } else if text.starts_with("/echo") {
+            if text.starts_with("/echo") {
                 let echo_text = text.trim_start_matches("/echo").trim();
                 if echo_text.is_empty() {
                     bot.send_message(msg.chat.id, "Использование: /echo <текст>")
@@ -41,5 +34,22 @@ impl Module for EchoModule {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_module_name() {
+        let module = EchoModule::new();
+        assert_eq!(module.name(), "Echo");
+    }
+
+    #[test]
+    fn test_module_commands() {
+        let module = EchoModule::new();
+        assert_eq!(module.commands(), vec!["/echo"]);
     }
 }

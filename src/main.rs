@@ -3,7 +3,7 @@ use std::sync::Arc;
 use teloxide::prelude::*;
 
 mod modules;
-use modules::{EchoModule, ModuleRegistry};
+use modules::{EchoModule, ModuleRegistry, StartModule};
 
 #[tokio::main]
 async fn main() {
@@ -12,6 +12,7 @@ async fn main() {
     log::info!("Starting currency bot...");
 
     let mut registry = ModuleRegistry::new();
+    registry.register(Box::new(StartModule::new()));
     registry.register(Box::new(EchoModule::new()));
     let registry = Arc::new(registry);
 
@@ -29,12 +30,4 @@ async fn main() {
         }
     })
     .await;
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_basic_math() {
-        assert_eq!(1 + 1, 2);
-    }
 }

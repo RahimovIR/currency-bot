@@ -51,5 +51,7 @@ impl ModuleRegistry {
 }
 
 pub mod echo;
+pub mod start;
 
 pub use self::echo::EchoModule;
+pub use self::start::StartModule;
