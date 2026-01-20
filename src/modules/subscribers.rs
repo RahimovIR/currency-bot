@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use std::collections::HashSet;
 use std::error::Error;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use teloxide::prelude::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -16,12 +17,14 @@ pub enum SubscriptionAction {
 #[derive(Debug, Clone)]
 pub struct SubscriberManager {
     subscribers: Arc<std::sync::Mutex<HashSet<ChatId>>>,
+    next_send_time: Arc<std::sync::Mutex<Option<Instant>>>,
 }
 
 impl SubscriberManager {
     pub fn new() -> Self {
         Self {
             subscribers: Arc::new(std::sync::Mutex::new(HashSet::new())),
+            next_send_time: Arc::new(std::sync::Mutex::new(None)),
         }
     }
 
@@ -61,6 +64,23 @@ impl SubscriberManager {
         let subscribers = self.subscribers.lock().unwrap();
         subscribers.len()
     }
+
+    pub fn set_next_send_time(&self, time: Instant) {
+        let mut next = self.next_send_time.lock().unwrap();
+        *next = Some(time);
+    }
+
+    pub fn get_time_until_next(&self) -> Option<Duration> {
+        let next = self.next_send_time.lock().unwrap();
+        next.map(|t| {
+            let remaining = t.duration_since(Instant::now());
+            if remaining.is_zero() {
+                Duration::from_secs(0)
+            } else {
+                remaining
+            }
+        })
+    }
 }
 
 pub struct SubscriberModule {
@@ -74,8 +94,19 @@ impl SubscriberModule {
 
     fn format_status(&self, chat_id: ChatId) -> String {
         if self.manager.is_subscribed(chat_id) {
+            let time_left = self.manager.get_time_until_next();
+            let time_text = match time_left {
+                Some(d) if d.as_secs() > 0 => {
+                    let minutes = d.as_secs() / 60;
+                    let seconds = d.as_secs() % 60;
+                    format!("Следующее сообщение через {} мин {} сек", minutes, seconds)
+                }
+                Some(_) => "Сообщение будет отправлено скоро...".to_string(),
+                None => "Информация о времени рассылки недоступна".to_string(),
+            };
             format!(
-                "Вы подписаны на рассылку. Всего подписчиков: {}",
+                "Вы подписаны на рассылку.\n{}\nВсего подписчиков: {}",
+                time_text,
                 self.manager.subscriber_count()
             )
         } else {

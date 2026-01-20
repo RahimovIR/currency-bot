@@ -1,6 +1,6 @@
 use super::subscribers::SubscriberManager;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use teloxide::prelude::*;
 
 const DEFAULT_INTERVAL_MINUTES: u64 = 10;
@@ -53,6 +53,9 @@ impl Scheduler {
         let mut interval = tokio::time::interval(self.interval);
 
         loop {
+            let next_send = Instant::now() + self.interval;
+            self.subscribers.set_next_send_time(next_send);
+
             interval.tick().await;
             self.send_periodic_message(&bot).await;
         }
