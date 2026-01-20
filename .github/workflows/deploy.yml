@@ -13,6 +13,9 @@ jobs:
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
+    environment: dev
+    needs:
+      - CI
     permissions:
       contents: read
       packages: write
@@ -55,7 +58,11 @@ jobs:
 
     - name: Set image tag
       id: image
-      run: echo "tag=$(echo ${{ steps.meta.outputs.tags }} | head -n1)" >> $GITHUB_OUTPUT
+      run: |
+        TAGS="${{ steps.meta.outputs.tags }}"
+        FIRST_TAG=$(echo "$TAGS" | head -n1 | tr -d '\r')
+        echo "tag=$FIRST_TAG" >> $GITHUB_OUTPUT
+        echo "Using image tag: $FIRST_TAG"
 
     - name: Setup SSH key
       run: |
@@ -73,14 +80,14 @@ jobs:
 
     - name: Deploy to server
       run: |
-        ssh -i ~/.ssh/id_ed25519 ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << ENDSSH
+        ssh -i ~/.ssh/id_ed25519 ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << 'ENDSSH'
           set -e
 
           # Login to GHCR
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
           # Pull new image
-          docker pull ${{ steps.image.outputs.tag }}
+          docker pull "$IMAGE_TAG"
 
           # Stop old container
           docker stop currency-bot || true
@@ -90,8 +97,13 @@ jobs:
           docker run -d \
             --name currency-bot \
             --restart unless-stopped \
-            -e TELOXIDE_TOKEN="${{ secrets.TELOXIDE_TOKEN }}" \
-            ${{ steps.image.outputs.tag }}
+            -e TELOXIDE_TOKEN="$TELOXIDE_TOKEN" \
+            "$IMAGE_TAG"
 
           echo "Deployment completed successfully"
         ENDSSH
+      env:
+        IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        TELOXIDE_TOKEN: ${{ secrets.TELOXIDE_TOKEN }}
