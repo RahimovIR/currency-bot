@@ -154,3 +154,26 @@ Branch workflow:
 - Use `Bot::from_env()` to create bot instance
 - Set `TELOXIDE_TOKEN` environment variable
 - Use `teloxide::repl` for simple handlers or derive `Dispatcher` for complex ones
+
+## Periodic Messaging
+
+### Configuration (`.env`)
+```
+SUBSCRIPTION_INTERVAL_MINUTES=10    # Interval between messages (default: 10)
+PERIODIC_MESSAGE_TEXT=Your message  # Message text to send (default: "Периодическое сообщение от бота")
+```
+
+### User Commands
+- `/subscribe` - Subscribe to periodic messages
+- `/unsubscribe` - Unsubscribe from periodic messages
+- `/status` - Check subscription status
+
+### Architecture
+- **SubscriberManager**: Stores subscribed users in `HashSet<ChatId>` (in-memory)
+- **Scheduler**: Uses `tokio::time::interval` for periodic execution
+- **Integration**: Scheduler runs in separate `tokio::spawn` task
+
+### Limitations
+- Subscriptions are stored in-memory only (reset on bot restart)
+- No rate limiting between messages (50ms delay between sends)
+- No message queue (failed sends are logged only)
