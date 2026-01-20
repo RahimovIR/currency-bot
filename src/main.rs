@@ -1,23 +1,32 @@
 use dotenvy::dotenv;
+use std::sync::Arc;
 use teloxide::prelude::*;
+
+mod modules;
+use modules::{EchoModule, ModuleRegistry};
 
 #[tokio::main]
 async fn main() {
-    // Load environment variables from .env file if present
     dotenv().ok();
-
-    // Initialize logger (optional but useful)
     pretty_env_logger::init();
-    log::info!("Starting simple echo bot...");
+    log::info!("Starting currency bot...");
+
+    let mut registry = ModuleRegistry::new();
+    registry.register(Box::new(EchoModule::new()));
+    let registry = Arc::new(registry);
 
     let bot = Bot::from_env();
 
-    teloxide::repl(bot, |bot: Bot, msg: Message| async move {
-        // Echo back the received text, if any
-        if let Some(txt) = msg.text() {
-            bot.send_message(msg.chat.id, txt).await?;
+    teloxide::repl(bot, move |bot: Bot, msg: Message| {
+        let registry = Arc::clone(&registry);
+        async move {
+            if let Err(e) = registry.handle_message(bot, msg).await {
+                log::error!("Error handling message: {}", e);
+                Ok(())
+            } else {
+                Ok(())
+            }
         }
-        Ok(())
     })
     .await;
 }
