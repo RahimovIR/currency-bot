@@ -29,7 +29,7 @@ impl Module for StartModule {
     }
 
     async fn handle(&self, bot: Bot, msg: Message) -> Result<(), Box<dyn Error + Send + Sync>> {
-        bot.send_message(msg.chat.id, GREETING).await?;
+        bot.send_message(msg.chat.id, Self::greeting()).await?;
         Ok(())
     }
 }

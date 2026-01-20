@@ -32,6 +32,10 @@ cargo clippy --fix       # Auto-fix Clippy warnings
 cargo fmt                # Format code
 cargo fmt --check        # Check formatting without modifying
 ```
+- **Always fix all Clippy warnings** before committing
+- CI will fail if warnings are present
+- Use `cargo clippy --fix` for automatic fixes, then review changes
+- Do not use `#[allow(...)]` to silence warnings unless absolutely necessary
 
 ### Documentation
 ```bash
