@@ -8,17 +8,19 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  SERVER_HOST: 192.3.24.166
-  SERVER_USER: ubuntu
 
 jobs:
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
+    environment: dev
     needs: CI.test
     permissions:
       contents: read
       packages: write
+    env:
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
 
     steps:
     - name: Checkout code
