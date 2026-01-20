@@ -58,6 +58,21 @@ Pre-commit hook automatically runs `cargo fmt` before each commit:
 - Set up automatically: `git config core.hooksPath githooks`
 - For manual setup: `git config core.hooksPath githooks`
 
+### Git Workflow
+Follow these branch naming conventions:
+- **Features**: `feature/<name>` - for new functionality
+  - Example: `feature/start-module`, `feature/currency-api`
+- **Bugfixes**: `bugfix/<name>` - for fixing bugs
+  - Example: `bugfix/memory-leak`, `botfix/parsing-error`
+
+Branch workflow:
+1. Create feature/bugfix branch from `master`
+2. Make changes and commit regularly
+3. Run tests and ensure they pass
+4. Create Pull Request to `master`
+5. Wait for CI to pass
+6. Merge after code review
+
 ## Code Style Guidelines
 
 ### Formatting
