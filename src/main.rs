@@ -16,7 +16,8 @@ use price_service::{
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().expect("Failed to load .env file");
+    // Try to load .env file, but don't fail if it's not present
+    let _ = dotenvy::dotenv();
 
     pretty_env_logger::init();
     log::info!("Starting currency bot...");
@@ -39,7 +40,7 @@ async fn main() {
     let newline_base_url = std::env::var("NEWLINE_API_BASE_URL")
         .unwrap_or_else(|_| "https://newline.online".to_string());
     let newline_cookie = std::env::var("NEWLINE_COOKIE")
-        .expect("NEWLINE_COOKIE environment variable is required but not set");
+        .unwrap_or_else(|_| panic!("NEWLINE_COOKIE environment variable is required but not set"));
     let newline_preferred_city =
         std::env::var("NEWLINE_PREFERRED_CITY").unwrap_or_else(|_| "spb".to_string());
 
