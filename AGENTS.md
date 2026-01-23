@@ -141,6 +141,10 @@ Branch workflow:
 - Use `#[derive(Debug)]` for all public types
 - Consider `#[non_exhaustive]` for enums that may grow
 
+### Function Parameters
+- Remove unused function parameters instead of renaming them with underscore prefix
+- Keep function signatures clean and minimal
+
 ### Testing
 - Write unit tests in modules: `#[cfg(test)] mod tests { ... }`
 - Write integration tests in `tests/` directory

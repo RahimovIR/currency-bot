@@ -52,11 +52,15 @@ impl ModuleRegistry {
 
 pub mod echo;
 pub mod help;
+pub mod newline;
+pub mod price;
 pub mod scheduler;
 pub mod start;
 pub mod subscribers;
 
 pub use self::echo::EchoModule;
 pub use self::help::HelpModule;
+pub use self::newline::NewLineModule;
+pub use self::price::PriceModule;
 pub use self::start::StartModule;
 pub use self::subscribers::{SubscriberManager, SubscriberModule};
