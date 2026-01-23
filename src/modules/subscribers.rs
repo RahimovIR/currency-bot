@@ -1,6 +1,6 @@
 use super::Module;
 use async_trait::async_trait;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -18,6 +18,7 @@ pub enum SubscriptionAction {
 pub struct SubscriberManager {
     subscribers: Arc<std::sync::Mutex<HashSet<ChatId>>>,
     next_send_time: Arc<std::sync::Mutex<Option<Instant>>>,
+    message_counters: Arc<std::sync::Mutex<HashMap<ChatId, u64>>>,
 }
 
 impl SubscriberManager {
@@ -25,6 +26,7 @@ impl SubscriberManager {
         Self {
             subscribers: Arc::new(std::sync::Mutex::new(HashSet::new())),
             next_send_time: Arc::new(std::sync::Mutex::new(None)),
+            message_counters: Arc::new(std::sync::Mutex::new(HashMap::new())),
         }
     }
 
@@ -32,6 +34,8 @@ impl SubscriberManager {
         let mut subscribers = self.subscribers.lock().unwrap();
         if subscribers.insert(chat_id) {
             log::info!("User {} subscribed to periodic messages", chat_id);
+            let mut counters = self.message_counters.lock().unwrap();
+            counters.insert(chat_id, 0);
             SubscriptionAction::Subscribed
         } else {
             log::debug!("User {} already subscribed", chat_id);
@@ -43,6 +47,8 @@ impl SubscriberManager {
         let mut subscribers = self.subscribers.lock().unwrap();
         if subscribers.remove(&chat_id) {
             log::info!("User {} unsubscribed from periodic messages", chat_id);
+            let mut counters = self.message_counters.lock().unwrap();
+            counters.remove(&chat_id);
             SubscriptionAction::Unsubscribed
         } else {
             log::debug!("User {} was not subscribed", chat_id);
@@ -63,6 +69,18 @@ impl SubscriberManager {
     pub fn subscriber_count(&self) -> usize {
         let subscribers = self.subscribers.lock().unwrap();
         subscribers.len()
+    }
+
+    pub fn get_message_count(&self, chat_id: ChatId) -> u64 {
+        let counters = self.message_counters.lock().unwrap();
+        *counters.get(&chat_id).unwrap_or(&0)
+    }
+
+    pub fn increment_message_counter(&self, chat_id: ChatId) {
+        let mut counters = self.message_counters.lock().unwrap();
+        if let Some(counter) = counters.get_mut(&chat_id) {
+            *counter += 1;
+        }
     }
 
     pub fn set_next_send_time(&self, time: Instant) {
@@ -217,6 +235,56 @@ mod tests {
         assert_eq!(subscribers.len(), 2);
         assert!(subscribers.contains(&chat_id1));
         assert!(subscribers.contains(&chat_id2));
+    }
+
+    #[test]
+    fn test_individual_counters() {
+        let manager = SubscriberManager::new();
+        let chat_id1 = ChatId(111);
+        let chat_id2 = ChatId(222);
+
+        manager.subscribe(chat_id1);
+        manager.subscribe(chat_id2);
+
+        assert_eq!(manager.get_message_count(chat_id1), 0);
+        assert_eq!(manager.get_message_count(chat_id2), 0);
+
+        manager.increment_message_counter(chat_id1);
+        assert_eq!(manager.get_message_count(chat_id1), 1);
+        assert_eq!(manager.get_message_count(chat_id2), 0);
+
+        manager.increment_message_counter(chat_id2);
+        manager.increment_message_counter(chat_id2);
+        assert_eq!(manager.get_message_count(chat_id1), 1);
+        assert_eq!(manager.get_message_count(chat_id2), 2);
+    }
+
+    #[test]
+    fn test_counter_removed_on_unsubscribe() {
+        let manager = SubscriberManager::new();
+        let chat_id = ChatId(12345);
+
+        manager.subscribe(chat_id);
+        manager.increment_message_counter(chat_id);
+        assert_eq!(manager.get_message_count(chat_id), 1);
+
+        manager.unsubscribe(chat_id);
+        assert_eq!(manager.get_message_count(chat_id), 0);
+    }
+
+    #[test]
+    fn test_message_counter() {
+        let manager = SubscriberManager::new();
+        let chat_id = ChatId(12345);
+
+        manager.subscribe(chat_id);
+        assert_eq!(manager.get_message_count(chat_id), 0);
+
+        manager.increment_message_counter(chat_id);
+        assert_eq!(manager.get_message_count(chat_id), 1);
+
+        manager.increment_message_counter(chat_id);
+        assert_eq!(manager.get_message_count(chat_id), 2);
     }
 
     #[test]

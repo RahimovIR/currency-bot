@@ -2,6 +2,11 @@
 
 This repository contains a Telegram currency bot built in Rust using teloxide.
 
+## File Access Rules
+
+- **Allowed**: Reading and modifying files only within the project directory
+- **Forbidden**: Using `..` in file paths to access files outside the project directory
+
 ## Build Commands
 
 ### Build

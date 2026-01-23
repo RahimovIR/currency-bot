@@ -76,9 +76,18 @@ impl Scheduler {
         let mut error_count = 0;
 
         for chat_id in subscribers {
-            match bot.send_message(chat_id, &self.message_text).await {
+            let current_count = self.subscribers.get_message_count(chat_id);
+            let message_with_counter = format!(
+                "Периодическое сообщение #{}:
+{}",
+                current_count + 1,
+                self.message_text
+            );
+
+            match bot.send_message(chat_id, &message_with_counter).await {
                 Ok(_) => {
                     success_count += 1;
+                    self.subscribers.increment_message_counter(chat_id);
                 }
                 Err(e) => {
                     log::error!("Failed to send message to {}: {}", chat_id, e);
@@ -120,7 +129,8 @@ mod tests {
         );
 
         let manager = Arc::new(SubscriberManager::new());
-        let scheduler = Scheduler::with_config(manager, Duration::from_millis(100), "Test message");
+        let scheduler =
+            Scheduler::with_config(manager.clone(), Duration::from_millis(100), "Test message");
 
         let bot = Bot::from_env();
         let mut interval = time::interval(Duration::from_millis(100));
@@ -133,6 +143,16 @@ mod tests {
         interval.tick().await;
 
         std::env::remove_var("TELOXIDE_TOKEN");
+    }
+
+    #[test]
+    fn test_message_counter_basic() {
+        let manager = Arc::new(SubscriberManager::new());
+        let chat_id = ChatId(12345);
+        manager.subscribe(chat_id);
+        assert_eq!(manager.get_message_count(chat_id), 0);
+        manager.increment_message_counter(chat_id);
+        assert_eq!(manager.get_message_count(chat_id), 1);
     }
 
     #[test]
@@ -152,16 +172,10 @@ mod tests {
 
     #[test]
     fn test_scheduler_custom_values() {
-        std::env::set_var("SUBSCRIPTION_INTERVAL_MINUTES", "5");
-        std::env::set_var("PERIODIC_MESSAGE_TEXT", "Custom message");
-
         let manager = Arc::new(SubscriberManager::new());
-        let scheduler = Scheduler::new(manager);
+        let scheduler = Scheduler::with_config(manager, Duration::from_secs(300), "Custom message");
 
-        assert_eq!(scheduler.interval, Duration::from_secs(5 * 60));
+        assert_eq!(scheduler.interval, Duration::from_secs(300));
         assert_eq!(scheduler.message_text, "Custom message");
-
-        std::env::remove_var("SUBSCRIPTION_INTERVAL_MINUTES");
-        std::env::remove_var("PERIODIC_MESSAGE_TEXT");
     }
 }
