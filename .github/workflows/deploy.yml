@@ -107,12 +107,14 @@ jobs:
           docker stop currency-bot || true
           docker rm -f currency-bot || true
 
-          # Run new container
-          docker run -d \
-            --name currency-bot \
-            --restart unless-stopped \
-            -e TELOXIDE_TOKEN="${{ secrets.TELOXIDE_TOKEN }}" \
-            "${{ steps.image.outputs.tag }}"
+           # Run new container
+           docker run -d \
+             --name currency-bot \
+             --restart unless-stopped \
+             -e TELOXIDE_TOKEN="${{ secrets.TELOXIDE_TOKEN }}" \
+             -e NEWLINE_COOKIE="${{ secrets.NEWLINE_COOKIE }}" \
+             -e NEWLINE_API_BASE_URL="${{ vars.NEWLINE_API_BASE_URL }}" \
+             "${{ steps.image.outputs.tag }}"
 
           echo "Deployment completed successfully"
         ENDSSH

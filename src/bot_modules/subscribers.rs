@@ -161,8 +161,7 @@ impl SubscriberManager {
         let current_count = self.get_message_count(chat_id);
         let message_text = self.get_periodic_message_text();
         format!(
-            "Периодическое сообщение #{}:
-{}",
+            "Периодическое сообщение #{}:\n{}",
             current_count + 1,
             message_text
         )

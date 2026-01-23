@@ -1,16 +1,23 @@
-use dotenvy::dotenv;
 use std::sync::Arc;
 use teloxide::prelude::*;
 
-mod modules;
-use modules::scheduler::Scheduler;
-use modules::{
-    EchoModule, HelpModule, ModuleRegistry, StartModule, SubscriberManager, SubscriberModule,
+mod bot_modules;
+mod domain;
+mod price_service;
+use bot_modules::scheduler::Scheduler;
+use bot_modules::{
+    EchoModule, HelpModule, ModuleRegistry, NewLineModule, PriceModule, StartModule,
+    SubscriberManager, SubscriberModule,
+};
+use price_service::{
+    providers::{NewLineConfig, NewLineProvider},
+    PriceService,
 };
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
+    dotenvy::dotenv().expect("Failed to load .env file");
+
     pretty_env_logger::init();
     log::info!("Starting currency bot...");
 
@@ -25,9 +32,32 @@ async fn main() {
 
     let subscriber_manager = Arc::new(SubscriberManager::new(periodic_message_text.clone()));
 
+    // Initialize price service
+    let mut price_service = PriceService::new();
+
+    // Configure NewLine provider from environment
+    let newline_base_url = std::env::var("NEWLINE_API_BASE_URL")
+        .unwrap_or_else(|_| "https://newline.online".to_string());
+    let newline_cookie = std::env::var("NEWLINE_COOKIE")
+        .expect("NEWLINE_COOKIE environment variable is required but not set");
+    let newline_preferred_city =
+        std::env::var("NEWLINE_PREFERRED_CITY").unwrap_or_else(|_| "spb".to_string());
+
+    let newline_config = NewLineConfig {
+        base_url: newline_base_url,
+        cookie: newline_cookie,
+        preferred_city: newline_preferred_city,
+    };
+
+    let newline_provider = Arc::new(NewLineProvider::new(newline_config));
+    price_service.add_provider(newline_provider);
+    let price_service = Arc::new(price_service);
+
     let mut registry = ModuleRegistry::new();
     registry.register(Box::new(StartModule::new()));
     registry.register(Box::new(EchoModule::new()));
+    registry.register(Box::new(PriceModule::new(Arc::clone(&price_service))));
+    registry.register(Box::new(NewLineModule::new(Arc::clone(&price_service))));
     registry.register(Box::new(SubscriberModule::new(Arc::clone(
         &subscriber_manager,
     ))));
