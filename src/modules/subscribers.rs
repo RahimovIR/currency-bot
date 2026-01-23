@@ -5,6 +5,7 @@ use std::error::Error;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use teloxide::prelude::*;
+use teloxide::types::MessageId;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SubscriptionAction {
@@ -19,14 +20,18 @@ pub struct SubscriberManager {
     subscribers: Arc<std::sync::Mutex<HashSet<ChatId>>>,
     next_send_time: Arc<std::sync::Mutex<Option<Instant>>>,
     message_counters: Arc<std::sync::Mutex<HashMap<ChatId, u64>>>,
+    message_ids: Arc<std::sync::Mutex<HashMap<ChatId, MessageId>>>,
+    message_text: String,
 }
 
 impl SubscriberManager {
-    pub fn new() -> Self {
+    pub fn new(message_text: String) -> Self {
         Self {
             subscribers: Arc::new(std::sync::Mutex::new(HashSet::new())),
             next_send_time: Arc::new(std::sync::Mutex::new(None)),
             message_counters: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            message_ids: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            message_text,
         }
     }
 
@@ -83,6 +88,54 @@ impl SubscriberManager {
         }
     }
 
+    pub async fn send_periodic_message_to_chat(
+        &self,
+        bot: &Bot,
+        chat_id: ChatId,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        let message_with_counter = self.format_periodic_message(chat_id);
+
+        match self.get_message_id(chat_id) {
+            Some(message_id) => {
+                match bot
+                    .edit_message_text(chat_id, message_id, &message_with_counter)
+                    .await
+                {
+                    Ok(_) => {
+                        self.increment_message_counter(chat_id);
+                        Ok(true)
+                    }
+                    Err(e) => {
+                        log::error!("Failed to edit message for {}: {}", chat_id, e);
+                        Ok(false)
+                    }
+                }
+            }
+            None => {
+                log::debug!(
+                    "No message ID found for chat {}, skipping periodic message",
+                    chat_id
+                );
+                Ok(false)
+            }
+        }
+    }
+
+    pub fn set_message_id(&self, chat_id: ChatId, message_id: MessageId) {
+        let mut ids = self.message_ids.lock().unwrap();
+        ids.insert(chat_id, message_id);
+    }
+
+    pub fn get_message_id(&self, chat_id: ChatId) -> Option<MessageId> {
+        let ids = self.message_ids.lock().unwrap();
+        ids.get(&chat_id).copied()
+    }
+
+    pub fn remove_message_id(&self, chat_id: ChatId) {
+        let mut ids = self.message_ids.lock().unwrap();
+        ids.remove(&chat_id);
+    }
+
     pub fn set_next_send_time(&self, time: Instant) {
         let mut next = self.next_send_time.lock().unwrap();
         *next = Some(time);
@@ -98,6 +151,21 @@ impl SubscriberManager {
                 remaining
             }
         })
+    }
+
+    pub fn get_periodic_message_text(&self) -> String {
+        self.message_text.clone()
+    }
+
+    pub fn format_periodic_message(&self, chat_id: ChatId) -> String {
+        let current_count = self.get_message_count(chat_id);
+        let message_text = self.get_periodic_message_text();
+        format!(
+            "Периодическое сообщение #{}:
+{}",
+            current_count + 1,
+            message_text
+        )
     }
 }
 
@@ -156,6 +224,13 @@ impl Module for SubscriberModule {
                         _ => unreachable!(),
                     };
                     bot.send_message(chat_id, response).await?;
+
+                    if let SubscriptionAction::Subscribed = action {
+                        let initial_message = self.manager.format_periodic_message(chat_id);
+                        let message = bot.send_message(chat_id, &initial_message).await?;
+                        self.manager.set_message_id(chat_id, message.id);
+                        self.manager.increment_message_counter(chat_id);
+                    }
                 }
                 "/unsubscribe" => {
                     let action = self.manager.unsubscribe(chat_id);
@@ -165,6 +240,7 @@ impl Module for SubscriberModule {
                         _ => unreachable!(),
                     };
                     bot.send_message(chat_id, response).await?;
+                    self.manager.remove_message_id(chat_id);
                 }
                 "/status" => {
                     let status = self.format_status(chat_id);
@@ -184,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_subscribe_new_user() {
-        let manager = SubscriberManager::new();
+        let manager = SubscriberManager::new("Test message".to_string());
         let chat_id = ChatId(12345);
         assert_eq!(manager.subscribe(chat_id), SubscriptionAction::Subscribed);
         assert!(manager.is_subscribed(chat_id));
@@ -192,7 +268,7 @@ mod tests {
 
     #[test]
     fn test_subscribe_already_subscribed() {
-        let manager = SubscriberManager::new();
+        let manager = SubscriberManager::new("Test message".to_string());
         let chat_id = ChatId(12345);
         manager.subscribe(chat_id);
         assert_eq!(
@@ -204,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_unsubscribe() {
-        let manager = SubscriberManager::new();
+        let manager = SubscriberManager::new("Test message".to_string());
         let chat_id = ChatId(12345);
         manager.subscribe(chat_id);
         assert_eq!(
@@ -216,7 +292,7 @@ mod tests {
 
     #[test]
     fn test_unsubscribe_not_subscribed() {
-        let manager = SubscriberManager::new();
+        let manager = SubscriberManager::new("Test message".to_string());
         let chat_id = ChatId(12345);
         assert_eq!(
             manager.unsubscribe(chat_id),
@@ -226,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_get_subscribers() {
-        let manager = SubscriberManager::new();
+        let manager = SubscriberManager::new("Test message".to_string());
         let chat_id1 = ChatId(111);
         let chat_id2 = ChatId(222);
         manager.subscribe(chat_id1);
@@ -239,7 +315,7 @@ mod tests {
 
     #[test]
     fn test_individual_counters() {
-        let manager = SubscriberManager::new();
+        let manager = SubscriberManager::new("Test message".to_string());
         let chat_id1 = ChatId(111);
         let chat_id2 = ChatId(222);
 
@@ -261,7 +337,7 @@ mod tests {
 
     #[test]
     fn test_counter_removed_on_unsubscribe() {
-        let manager = SubscriberManager::new();
+        let manager = SubscriberManager::new("Test message".to_string());
         let chat_id = ChatId(12345);
 
         manager.subscribe(chat_id);
@@ -273,8 +349,22 @@ mod tests {
     }
 
     #[test]
+    fn test_message_id_management() {
+        let manager = SubscriberManager::new("Test message".to_string());
+        let chat_id = ChatId(12345);
+        let message_id = MessageId(67890);
+
+        manager.subscribe(chat_id);
+        manager.set_message_id(chat_id, message_id);
+        assert_eq!(manager.get_message_id(chat_id), Some(message_id));
+
+        manager.remove_message_id(chat_id);
+        assert_eq!(manager.get_message_id(chat_id), None);
+    }
+
+    #[test]
     fn test_message_counter() {
-        let manager = SubscriberManager::new();
+        let manager = Arc::new(SubscriberManager::new("Test message".to_string()));
         let chat_id = ChatId(12345);
 
         manager.subscribe(chat_id);
@@ -288,15 +378,32 @@ mod tests {
     }
 
     #[test]
+    fn test_format_periodic_message() {
+        let manager = Arc::new(SubscriberManager::new(
+            "Периодическое сообщение от бота".to_string(),
+        ));
+        let chat_id = ChatId(12345);
+
+        manager.subscribe(chat_id);
+        let message = manager.format_periodic_message(chat_id);
+        assert!(message.contains("Периодическое сообщение #1:"));
+        assert!(message.contains("Периодическое сообщение от бота"));
+
+        manager.increment_message_counter(chat_id);
+        let message = manager.format_periodic_message(chat_id);
+        assert!(message.contains("Периодическое сообщение #2:"));
+    }
+
+    #[test]
     fn test_module_name() {
-        let manager = Arc::new(SubscriberManager::new());
+        let manager = Arc::new(SubscriberManager::new("Test message".to_string()));
         let module = SubscriberModule::new(manager);
         assert_eq!(module.name(), "Subscriber");
     }
 
     #[test]
     fn test_module_commands() {
-        let manager = Arc::new(SubscriberManager::new());
+        let manager = Arc::new(SubscriberManager::new("Test message".to_string()));
         let module = SubscriberModule::new(manager);
         assert_eq!(
             module.commands(),

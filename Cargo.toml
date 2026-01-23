@@ -3,6 +3,12 @@ name = "currency-bot"
 version = "0.1.0"
 edition = "2021"
 
+[profile.dev]
+opt-level = 0
+
+[lints.rust]
+unused = "deny"
+
 [dependencies]
 pretty_env_logger = "0.5"
 log = "0.4"
