@@ -30,12 +30,7 @@ impl PriceService {
                 match provider.fetch_price(pair).await {
                     Ok(price) => return Ok(price),
                     Err(e) => {
-                        log::warn!(
-                            "Provider {} failed for {}: {}",
-                            provider.name(),
-                            format!("{}", pair),
-                            e
-                        );
+                        log::warn!("Provider {} failed for {}: {}", provider.name(), pair, e);
                         errors.push(e);
                     }
                 }
