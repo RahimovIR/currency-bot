@@ -40,24 +40,22 @@ impl super::Module for PriceModule {
                         Ok(price_data) => {
                             let response = format!(
                                 "💰 {} Price\n\nCurrency Pair: {}\nPrice: {:.2}",
-                                pair.to_string(),
-                                price_data.pair.to_string(),
-                                price_data.price
+                                pair, price_data.pair, price_data.price
                             );
                             bot.send_message(msg.chat.id, response).await?;
                         }
                         Err(e) => {
                             let error_msg = match e {
-                                PriceProviderError::NetworkError(msg) => {
+                                PriceProviderError::Network(msg) => {
                                     format!("🌐 Network error: {}", msg)
                                 }
-                                PriceProviderError::ApiError(msg) => {
+                                PriceProviderError::Api(msg) => {
                                     format!("🔌 API error: {}", msg)
                                 }
-                                PriceProviderError::ParsingError(msg) => {
+                                PriceProviderError::Parsing(msg) => {
                                     format!("📜 Parsing error: {}", msg)
                                 }
-                                PriceProviderError::ProviderError(msg) => {
+                                PriceProviderError::Provider(msg) => {
                                     format!("❌ Provider error: {}", msg)
                                 }
                             };
@@ -75,7 +73,7 @@ impl super::Module for PriceModule {
                 let available_pairs = crate::domain::get_all_currency_pairs();
                 let pairs_list = available_pairs
                     .iter()
-                    .map(|p| p.to_string())
+                    .map(|p| format!("{}", p))
                     .collect::<Vec<_>>()
                     .join(", ");
                 bot.send_message(

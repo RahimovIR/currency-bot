@@ -33,18 +33,16 @@ impl super::Module for NewLineModule {
             Ok(price_data) => {
                 let response = format!(
                     "💰 {} Price\n\nCurrency Pair: {}\nPrice: {:.2}",
-                    pair.to_string(),
-                    price_data.pair.to_string(),
-                    price_data.price
+                    pair, price_data.pair, price_data.price
                 );
                 bot.send_message(msg.chat.id, response).await?;
             }
             Err(e) => {
                 let error_msg = match e {
-                    PriceProviderError::NetworkError(msg) => format!("🌐 Network error: {}", msg),
-                    PriceProviderError::ApiError(msg) => format!("🔌 API error: {}", msg),
-                    PriceProviderError::ParsingError(msg) => format!("📜 Parsing error: {}", msg),
-                    PriceProviderError::ProviderError(msg) => format!("❌ Provider error: {}", msg),
+                    PriceProviderError::Network(msg) => format!("🌐 Network error: {}", msg),
+                    PriceProviderError::Api(msg) => format!("🔌 API error: {}", msg),
+                    PriceProviderError::Parsing(msg) => format!("📜 Parsing error: {}", msg),
+                    PriceProviderError::Provider(msg) => format!("❌ Provider error: {}", msg),
                 };
                 bot.send_message(msg.chat.id, error_msg).await?;
             }

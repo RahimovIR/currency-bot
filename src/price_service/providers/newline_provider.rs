@@ -127,7 +127,7 @@ impl NewLineProvider {
         match pair {
             CurrencyPair::USDCeRUB => Some("USDTERC_TO_CASHRUB".to_string()),
             CurrencyPair::USDTeRUB => Some("USDTERC_TO_CASHRUB".to_string()),
-            CurrencyPair::USDRUB => Some("CASHUSD_TO_USDTERC".to_string()),
+            CurrencyPair::Usdrub => Some("CASHUSD_TO_USDTERC".to_string()),
         }
     }
 }
@@ -140,28 +140,25 @@ impl PriceProvider for NewLineProvider {
 
     async fn fetch_price(&self, pair: &CurrencyPair) -> Result<PriceData, PriceProviderError> {
         let symbol = self.map_currency_pair(pair).ok_or_else(|| {
-            PriceProviderError::ProviderError(format!(
+            PriceProviderError::Provider(format!(
                 "Currency pair {} not supported by this provider",
-                pair.to_string()
+                pair
             ))
         })?;
 
         let url = format!("{}/api/direction/", self.config.base_url);
-        log::debug!(
-            "NewLineProvider: Fetching price for pair: {}",
-            pair.to_string()
-        );
+        log::debug!("NewLineProvider: Fetching price for pair: {}", pair);
         log::debug!("NewLineProvider: Mapped to symbol: {}", symbol);
         log::debug!("NewLineProvider: Request URL: {}", url);
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("Accept", "application/json")
             .header("Cookie", &self.config.cookie)
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
             .send()
             .await
-            .map_err(|e| PriceProviderError::NetworkError(e.to_string()))?;
+            .map_err(|e| PriceProviderError::Network(e.to_string()))?;
 
         let status = response.status();
         log::debug!("NewLineProvider: Response status: {}", status);
@@ -178,14 +175,14 @@ impl PriceProvider for NewLineProvider {
                 status,
                 response_text
             );
-            return Err(PriceProviderError::ApiError(format!(
+            return Err(PriceProviderError::Api(format!(
                 "API request failed with status: {}",
                 status
             )));
         }
 
         let city_data_list: Vec<NewLineCityData> = serde_json::from_str(&response_text)
-            .map_err(|e| PriceProviderError::ParsingError(e.to_string()))?;
+            .map_err(|e| PriceProviderError::Parsing(e.to_string()))?;
 
         // Find the requested symbol in the preferred city
         if let Some(to_data) = self.find_price_in_city_data(&city_data_list, &symbol) {
@@ -193,10 +190,9 @@ impl PriceProvider for NewLineProvider {
             return Ok(price_data);
         }
 
-        Err(PriceProviderError::ProviderError(format!(
+        Err(PriceProviderError::Provider(format!(
             "Symbol {} not found in API response for pair {}",
-            symbol,
-            pair.to_string()
+            symbol, pair
         )))
     }
 

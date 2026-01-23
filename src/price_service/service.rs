@@ -33,7 +33,7 @@ impl PriceService {
                         log::warn!(
                             "Provider {} failed for {}: {}",
                             provider.name(),
-                            pair.to_string(),
+                            format!("{}", pair),
                             e
                         );
                         errors.push(e);
@@ -42,10 +42,9 @@ impl PriceService {
             }
         }
 
-        Err(PriceProviderError::ProviderError(format!(
+        Err(PriceProviderError::Provider(format!(
             "All providers failed to fetch price for {}: {:?}",
-            pair.to_string(),
-            errors
+            pair, errors
         )))
     }
 }
