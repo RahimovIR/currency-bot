@@ -49,10 +49,10 @@ git tag v1.0.0 && git push --tags    # Create and push release tag
 ```
 - CI runs on push/PR: fmt check, clippy, tests, build on Linux (ubuntu-latest)
 - Release workflow: builds binary for Linux when tag `v*` is pushed
-- Deploy workflow: builds Docker image, pushes to GHCR, deploys to server via SSH + Podman
+- Deploy workflow: builds Docker image, pushes to GHCR, deploys to server via SSH + Docker
 
 ### Deployment
-- Uses Docker + GitHub Container Registry (GHCR) + Podman on Ubuntu server
+- Uses Docker + GitHub Container Registry (GHCR) on Ubuntu server
 - Automatic deployment on push to master branch
 - See `DEPLOYMENT.md` for detailed setup instructions
 
