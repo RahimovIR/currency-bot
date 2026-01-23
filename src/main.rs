@@ -4,7 +4,9 @@ use teloxide::prelude::*;
 
 mod modules;
 use modules::scheduler::Scheduler;
-use modules::{EchoModule, ModuleRegistry, StartModule, SubscriberManager, SubscriberModule};
+use modules::{
+    EchoModule, HelpModule, ModuleRegistry, StartModule, SubscriberManager, SubscriberModule,
+};
 
 #[tokio::main]
 async fn main() {
@@ -20,6 +22,7 @@ async fn main() {
     registry.register(Box::new(SubscriberModule::new(Arc::clone(
         &subscriber_manager,
     ))));
+    registry.register(Box::new(HelpModule::new()));
     let registry = Arc::new(registry);
 
     let bot = Bot::from_env();

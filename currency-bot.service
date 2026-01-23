@@ -1,12 +1,12 @@
 [Unit]
-Description=Currency Bot (Podman)
+Description=Currency Bot (Docker)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=notify
-ExecStart=/usr/bin/podman start currency-bot
-ExecStop=/usr/bin/podman stop -t 10 currency-bot
+Type=simple
+ExecStart=/usr/bin/docker start -a currency-bot
+ExecStop=/usr/bin/docker stop -t 10 currency-bot
 Restart=always
 RestartSec=5s
 

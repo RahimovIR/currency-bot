@@ -1,6 +1,6 @@
-# Deployment Guide
+# Deployment Guide (fully automated Docker)
 
-This guide explains how to deploy the Currency Bot to an Ubuntu server using Docker and GitHub Actions.
+This guide explains how to deploy the Currency Bot to production fully automated using Docker and GitHub Actions.
 
 ## Prerequisites
 
@@ -23,9 +23,9 @@ Add the following secrets to your GitHub repository (`Settings > Secrets and var
 
 | Secret Name | Description | Example |
 |-------------|-------------|---------|
-| `SERVER_HOST` | Server IP or domain | `192.168.1.100` or `vpn.example.com` |
+| `SERVER_HOST` | Server IP or domain | `192.168.1.100` or `example.com` |
 | `SERVER_USER` | SSH username | `ubuntu` |
-| `SSH_PRIVATE_KEY` | Private SSH key (contents of `~/.ssh/id_rsa`) | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
+| `SSH_PRIVATE_KEY` | Private SSH key for server access | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
 | `TELOXIDE_TOKEN` | Telegram bot token | `1234567890:ABC...` |
 | `GHCR_TOKEN` | GitHub Personal Access Token (GHCR scopes) | `ghp_...` |
 

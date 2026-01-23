@@ -51,10 +51,12 @@ impl ModuleRegistry {
 }
 
 pub mod echo;
+pub mod help;
 pub mod scheduler;
 pub mod start;
 pub mod subscribers;
 
 pub use self::echo::EchoModule;
+pub use self::help::HelpModule;
 pub use self::start::StartModule;
 pub use self::subscribers::{SubscriberManager, SubscriberModule};
