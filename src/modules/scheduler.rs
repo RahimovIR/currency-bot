@@ -3,60 +3,32 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use teloxide::prelude::*;
 
-const DEFAULT_INTERVAL_MINUTES: u64 = 10;
-const DEFAULT_MESSAGE: &str = "Периодическое сообщение от бота";
-
 pub struct Scheduler {
-    interval: Duration,
-    message_text: String,
     subscribers: Arc<SubscriberManager>,
+    interval: Duration,
 }
 
 impl Scheduler {
-    pub fn new(subscribers: Arc<SubscriberManager>) -> Self {
-        let interval_minutes = std::env::var("SUBSCRIPTION_INTERVAL_MINUTES")
-            .ok()
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(DEFAULT_INTERVAL_MINUTES);
-
-        let message_text = std::env::var("PERIODIC_MESSAGE_TEXT")
-            .ok()
-            .unwrap_or_else(|| DEFAULT_MESSAGE.to_string());
-
+    pub fn new(subscribers: Arc<SubscriberManager>, interval_minutes: u64) -> Self {
+        let interval = Duration::from_secs(interval_minutes * 60);
+        log::info!(
+            "Scheduler initialized with interval: {} minutes",
+            interval.as_secs() / 60
+        );
         Self {
-            interval: Duration::from_secs(interval_minutes * 60),
-            message_text,
             subscribers,
-        }
-    }
-
-    #[cfg(test)]
-    pub fn with_config(
-        subscribers: Arc<SubscriberManager>,
-        interval: Duration,
-        message: &str,
-    ) -> Self {
-        Self {
             interval,
-            message_text: message.to_string(),
-            subscribers,
         }
     }
 
     pub async fn start(&self, bot: Bot) {
-        log::info!(
-            "Scheduler started with interval: {} minutes",
-            self.interval.as_secs() / 60
-        );
-        log::info!("Message: {}", self.message_text);
-
-        let mut interval = tokio::time::interval(self.interval);
+        let mut interval_timer = tokio::time::interval(self.interval);
 
         loop {
             let next_send = Instant::now() + self.interval;
             self.subscribers.set_next_send_time(next_send);
 
-            interval.tick().await;
+            interval_timer.tick().await;
             self.send_periodic_message(&bot).await;
         }
     }
@@ -76,21 +48,15 @@ impl Scheduler {
         let mut error_count = 0;
 
         for chat_id in subscribers {
-            let current_count = self.subscribers.get_message_count(chat_id);
-            let message_with_counter = format!(
-                "Периодическое сообщение #{}:
-{}",
-                current_count + 1,
-                self.message_text
-            );
-
-            match bot.send_message(chat_id, &message_with_counter).await {
-                Ok(_) => {
-                    success_count += 1;
-                    self.subscribers.increment_message_counter(chat_id);
-                }
+            match self
+                .subscribers
+                .send_periodic_message_to_chat(bot, chat_id)
+                .await
+            {
+                Ok(true) => success_count += 1,
+                Ok(false) => error_count += 1,
                 Err(e) => {
-                    log::error!("Failed to send message to {}: {}", chat_id, e);
+                    log::error!("Unexpected error for {}: {}", chat_id, e);
                     error_count += 1;
                 }
             }
@@ -113,12 +79,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_scheduler_creation() {
-        let manager = Arc::new(SubscriberManager::new());
-        let scheduler = Scheduler::new(manager);
-        assert_eq!(
-            scheduler.interval,
-            Duration::from_secs(DEFAULT_INTERVAL_MINUTES * 60)
-        );
+        let manager = Arc::new(SubscriberManager::new("Test message".to_string()));
+        let scheduler = Scheduler::new(Arc::clone(&manager), 10);
+        let expected_interval = scheduler.interval;
+        assert_eq!(expected_interval, Duration::from_secs(10 * 60));
     }
 
     #[tokio::test]
@@ -128,9 +92,8 @@ mod tests {
             "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
         );
 
-        let manager = Arc::new(SubscriberManager::new());
-        let scheduler =
-            Scheduler::with_config(manager.clone(), Duration::from_millis(100), "Test message");
+        let manager = Arc::new(SubscriberManager::new("Test message".to_string()));
+        let scheduler = Scheduler::new(manager.clone(), 1);
 
         let bot = Bot::from_env();
         let mut interval = time::interval(Duration::from_millis(100));
@@ -147,7 +110,7 @@ mod tests {
 
     #[test]
     fn test_message_counter_basic() {
-        let manager = Arc::new(SubscriberManager::new());
+        let manager = Arc::new(SubscriberManager::new("Test message".to_string()));
         let chat_id = ChatId(12345);
         manager.subscribe(chat_id);
         assert_eq!(manager.get_message_count(chat_id), 0);
@@ -157,25 +120,25 @@ mod tests {
 
     #[test]
     fn test_scheduler_default_values() {
-        std::env::remove_var("SUBSCRIPTION_INTERVAL_MINUTES");
-        std::env::remove_var("PERIODIC_MESSAGE_TEXT");
+        let manager = Arc::new(SubscriberManager::new(
+            "Периодическое сообщение от бота".to_string(),
+        ));
+        let scheduler = Scheduler::new(Arc::clone(&manager), 10);
+        let expected_interval = scheduler.interval;
+        let expected_message = manager.get_periodic_message_text();
 
-        let manager = Arc::new(SubscriberManager::new());
-        let scheduler = Scheduler::new(manager);
-
-        assert_eq!(
-            scheduler.interval,
-            Duration::from_secs(DEFAULT_INTERVAL_MINUTES * 60)
-        );
-        assert_eq!(scheduler.message_text, DEFAULT_MESSAGE);
+        assert_eq!(expected_interval, Duration::from_secs(10 * 60));
+        assert_eq!(expected_message, "Периодическое сообщение от бота");
     }
 
     #[test]
     fn test_scheduler_custom_values() {
-        let manager = Arc::new(SubscriberManager::new());
-        let scheduler = Scheduler::with_config(manager, Duration::from_secs(300), "Custom message");
+        let manager = Arc::new(SubscriberManager::new("Custom message".to_string()));
+        let scheduler = Scheduler::new(Arc::clone(&manager), 5);
+        let interval = scheduler.interval;
+        let message_text = manager.get_periodic_message_text();
 
-        assert_eq!(scheduler.interval, Duration::from_secs(300));
-        assert_eq!(scheduler.message_text, "Custom message");
+        assert_eq!(interval, Duration::from_secs(5 * 60));
+        assert_eq!(message_text, "Custom message");
     }
 }

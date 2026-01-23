@@ -14,7 +14,16 @@ async fn main() {
     pretty_env_logger::init();
     log::info!("Starting currency bot...");
 
-    let subscriber_manager = Arc::new(SubscriberManager::new());
+    let subscription_interval_minutes = std::env::var("SUBSCRIPTION_INTERVAL_MINUTES")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(10);
+
+    let periodic_message_text = std::env::var("PERIODIC_MESSAGE_TEXT")
+        .ok()
+        .unwrap_or_else(|| "Периодическое сообщение от бота".to_string());
+
+    let subscriber_manager = Arc::new(SubscriberManager::new(periodic_message_text.clone()));
 
     let mut registry = ModuleRegistry::new();
     registry.register(Box::new(StartModule::new()));
@@ -27,7 +36,10 @@ async fn main() {
 
     let bot = Bot::from_env();
 
-    let scheduler = Scheduler::new(Arc::clone(&subscriber_manager));
+    let scheduler = Scheduler::new(
+        Arc::clone(&subscriber_manager),
+        subscription_interval_minutes,
+    );
     let scheduler_bot = bot.clone();
 
     tokio::spawn(async move {
