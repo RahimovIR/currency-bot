@@ -28,6 +28,7 @@ Add the following secrets to your GitHub repository (`Settings > Secrets and var
 | `SSH_PRIVATE_KEY` | Private SSH key for server access | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
 | `TELOXIDE_TOKEN` | Telegram bot token | `1234567890:ABC...` |
 | `GHCR_TOKEN` | GitHub Personal Access Token (GHCR scopes) | `ghp_...` |
+| `NEWLINE_COOKIE` | NewLine API authentication cookie | `sessionid=...` |
 
 ### Generate SSH Keys
 
@@ -90,7 +91,7 @@ docker push ghcr.io/YOUR_USERNAME/currency-bot:latest
 ```bash
 ssh vpn
 docker pull ghcr.io/YOUR_USERNAME/currency-bot:latest
-docker run -d --name currency-bot --restart unless-stopped -e TELOXIDE_TOKEN="your-token" ghcr.io/YOUR_USERNAME/currency-bot:latest
+docker run -d --name currency-bot --restart unless-stopped -e TELOXIDE_TOKEN="your-token" -e NEWLINE_COOKIE="your-newline-cookie" ghcr.io/YOUR_USERNAME/currency-bot:latest
 ```
 
 ## Server Management
@@ -117,7 +118,7 @@ ssh vpn "docker stop currency-bot"
 
 ### Update Container
 ```bash
-ssh vpn "docker pull ghcr.io/YOUR_USERNAME/currency-bot:latest && docker stop currency-bot && docker rm currency-bot && docker run -d --name currency-bot --restart unless-stopped -e TELOXIDE_TOKEN='your-token' ghcr.io/YOUR_USERNAME/currency-bot:latest"
+ssh vpn "docker pull ghcr.io/YOUR_USERNAME/currency-bot:latest && docker stop currency-bot && docker rm currency-bot && docker run -d --name currency-bot --restart unless-stopped -e TELOXIDE_TOKEN='your-token' -e NEWLINE_COOKIE='your-newline-cookie' ghcr.io/YOUR_USERNAME/currency-bot:latest"
 ```
 
 ## Systemd Service (Optional)
