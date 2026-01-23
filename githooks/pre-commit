@@ -1,13 +1,30 @@
 #!/bin/bash
 
-# Pre-commit hook: Format Rust code with cargo fmt
+# Pre-commit hook: Format Rust code with cargo fmt and run clippy
 
 echo "Running cargo fmt..."
 
 # Format all Rust code
 cargo fmt
 
+# Check if formatting was successful
+if [ $? -ne 0 ]; then
+    echo "Error: cargo fmt failed"
+    exit 1
+fi
+
+echo "Running cargo clippy..."
+
+# Run clippy to catch linting errors
+cargo clippy --all-targets --all-features -- -D warnings
+
+# Check if clippy was successful
+if [ $? -ne 0 ]; then
+    echo "Error: cargo clippy found issues that need to be fixed"
+    exit 1
+fi
+
 # Add formatted files to staging area
 git add -u
 
-echo "Code formatted successfully"
+echo "Code formatted and clippy checks passed successfully"
