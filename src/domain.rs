@@ -32,19 +32,19 @@ pub enum PriceProviderError {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum CurrencyPair {
     /// USDC (ERC20) to RUB
-    USDCeRUB,
+    USDCe2RUB,
     /// USDT (ERC20) to RUB  
-    USDTeRUB,
+    USDTe2RUB,
     /// USD to RUB
-    Usdrub,
+    USD2RUB,
 }
 
 impl fmt::Display for CurrencyPair {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            CurrencyPair::USDCeRUB => "USDCe/RUB",
-            CurrencyPair::USDTeRUB => "USDTe/RUB",
-            CurrencyPair::Usdrub => "USD/RUB",
+            CurrencyPair::USDCe2RUB => "USDCe/RUB",
+            CurrencyPair::USDTe2RUB => "USDTe/RUB",
+            CurrencyPair::USD2RUB => "USD/RUB",
         };
         write!(f, "{}", s)
     }
@@ -54,9 +54,9 @@ impl CurrencyPair {
     /// Parse string to CurrencyPair
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
-            "USDCe/RUB" => Some(CurrencyPair::USDCeRUB),
-            "USDTe/RUB" => Some(CurrencyPair::USDTeRUB),
-            "USD/RUB" => Some(CurrencyPair::Usdrub),
+            "USDCe/RUB" => Some(CurrencyPair::USDCe2RUB),
+            "USDTe/RUB" => Some(CurrencyPair::USDTe2RUB),
+            "USD/RUB" => Some(CurrencyPair::USD2RUB),
             _ => None,
         }
     }
@@ -65,9 +65,9 @@ impl CurrencyPair {
 /// Get all available domain currency pairs
 pub fn get_all_currency_pairs() -> Vec<CurrencyPair> {
     vec![
-        CurrencyPair::USDCeRUB,
-        CurrencyPair::USDTeRUB,
-        CurrencyPair::Usdrub,
+        CurrencyPair::USDCe2RUB,
+        CurrencyPair::USDTe2RUB,
+        CurrencyPair::USD2RUB,
     ]
 }
 
@@ -81,15 +81,15 @@ mod tests {
     fn test_currency_pair_parsing() {
         assert_eq!(
             CurrencyPair::from_str("USD/RUB"),
-            Some(CurrencyPair::Usdrub)
+            Some(CurrencyPair::USD2RUB)
         );
         assert_eq!(
             CurrencyPair::from_str("USDCe/RUB"),
-            Some(CurrencyPair::USDCeRUB)
+            Some(CurrencyPair::USDCe2RUB)
         );
         assert_eq!(
             CurrencyPair::from_str("USDTe/RUB"),
-            Some(CurrencyPair::USDTeRUB)
+            Some(CurrencyPair::USDTe2RUB)
         );
         assert_eq!(CurrencyPair::from_str("INVALID"), None);
     }
@@ -105,9 +105,9 @@ mod tests {
         let provider = NewLineProvider::new(config);
 
         // Test mapping indirectly through supports_currency_pair
-        assert!(provider.supports_currency_pair(&CurrencyPair::USDCeRUB));
-        assert!(provider.supports_currency_pair(&CurrencyPair::USDTeRUB));
-        assert!(provider.supports_currency_pair(&CurrencyPair::Usdrub));
+        assert!(provider.supports_currency_pair(&CurrencyPair::USDCe2RUB));
+        assert!(provider.supports_currency_pair(&CurrencyPair::USDTe2RUB));
+        assert!(provider.supports_currency_pair(&CurrencyPair::USD2RUB));
     }
 
     #[test]
@@ -120,17 +120,17 @@ mod tests {
 
         let provider = NewLineProvider::new(config);
 
-        assert!(provider.supports_currency_pair(&CurrencyPair::USDCeRUB));
-        assert!(provider.supports_currency_pair(&CurrencyPair::USDTeRUB));
-        assert!(provider.supports_currency_pair(&CurrencyPair::Usdrub));
+        assert!(provider.supports_currency_pair(&CurrencyPair::USDCe2RUB));
+        assert!(provider.supports_currency_pair(&CurrencyPair::USDTe2RUB));
+        assert!(provider.supports_currency_pair(&CurrencyPair::USD2RUB));
     }
 
     #[test]
     fn test_get_all_currency_pairs() {
         let pairs = get_all_currency_pairs();
         assert_eq!(pairs.len(), 3);
-        assert!(pairs.contains(&CurrencyPair::Usdrub));
-        assert!(pairs.contains(&CurrencyPair::USDCeRUB));
-        assert!(pairs.contains(&CurrencyPair::USDTeRUB));
+        assert!(pairs.contains(&CurrencyPair::USD2RUB));
+        assert!(pairs.contains(&CurrencyPair::USDCe2RUB));
+        assert!(pairs.contains(&CurrencyPair::USDTe2RUB));
     }
 }

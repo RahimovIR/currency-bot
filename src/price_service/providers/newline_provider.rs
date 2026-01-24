@@ -120,14 +120,14 @@ impl NewLineProvider {
 
     /// Map domain currency pair to NewLine provider symbol (private method)
     ///
-    /// Note: Both USDCeRUB and USDTeRUB map to the same USDTERC_TO_CASHRUB symbol
+    /// Note: Both USDCe2RUB and USDTe2RUB map to the same USDTERC_TO_CASHRUB symbol
     /// since the NewLine API doesn't distinguish between different ERC20 stablecoins.
     /// This is a provider limitation, not a bug in the mapping logic.
     fn map_currency_pair(&self, pair: &CurrencyPair) -> Option<String> {
         match pair {
-            CurrencyPair::USDCeRUB => Some("USDTERC_TO_CASHRUB".to_string()),
-            CurrencyPair::USDTeRUB => Some("USDTERC_TO_CASHRUB".to_string()),
-            CurrencyPair::Usdrub => Some("CASHUSD_TO_USDTERC".to_string()),
+            CurrencyPair::USDCe2RUB => Some("USDTERC_TO_CASHRUB".to_string()),
+            CurrencyPair::USDTe2RUB => Some("USDTERC_TO_CASHRUB".to_string()),
+            CurrencyPair::USD2RUB => Some("CASHUSD_TO_USDTERC".to_string()),
         }
     }
 }

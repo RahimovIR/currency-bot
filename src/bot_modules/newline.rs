@@ -27,7 +27,7 @@ impl super::Module for NewLineModule {
     }
 
     async fn handle(&self, bot: Bot, msg: Message) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let pair = CurrencyPair::USDTeRUB;
+        let pair = CurrencyPair::USDTe2RUB;
 
         match self.price_service.get_price(&pair).await {
             Ok(price_data) => {
